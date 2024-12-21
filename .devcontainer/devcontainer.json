@@ -1,10 +1,9 @@
 {
-  "image": "mcr.microsoft.com/vscode/devcontainers/base:ubuntu24.04",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
   "features": {
     "ghcr.io/devcontainers-contrib/features/starship:1": {}
-  },
-  "containerEnv": {
-    "PYO3_PYTHON": "/workspaces/hdfset/.venv/bin/python"
   },
   "customizations": {
     "vscode": {
