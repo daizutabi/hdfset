@@ -1,0 +1,84 @@
+[build-system]
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "hdfset"
+version = "0.1.0"
+authors = [{ name = "daizutabi", email = "daizutabi@gmail.com" }]
+description = "A Python package for reading and writing HDF5 files."
+readme = "README.md"
+license = { file = "LICENSE" }
+classifiers = [
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+requires-python = ">=3.10"
+dependencies = []
+
+[project.urls]
+Documentation = "https://daizutabi.github.io/hdfset/"
+Source = "https://github.com/daizutabi/hdfset"
+Issues = "https://github.com/daizutabi/hdfset/issues"
+
+[tool.uv]
+dev-dependencies = [
+    "pytest-clarity",
+    "pytest-cov",
+    "pytest-randomly",
+    "pytest-xdist",
+    "ruff",
+]
+
+[tool.maturin]
+python-source = "python"
+features = ["pyo3/extension-module"]
+
+[tool.pytest.ini_options]
+addopts = ["--doctest-modules", "--cov=hdfset", "--cov-report=lcov:lcov.info"]
+doctest_optionflags = ["NORMALIZE_WHITESPACE", "IGNORE_EXCEPTION_DETAIL"]
+filterwarnings = [
+    'ignore:datetime.datetime.utcfromtimestamp\(\) is deprecated:DeprecationWarning',
+    'ignore:\nPyarrow will become a required dependency:DeprecationWarning',
+]
+
+[tool.coverage.run]
+disable_warnings = ["module-not-measured"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "except ImportError",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["ALL"]
+unfixable = ["F401"]
+ignore = [
+    "ANN002",
+    "ANN003",
+    "ARG001",
+    "ARG002",
+    "D",
+    "D105",
+    "D107",
+    "D203",
+    "D213",
+    "FBT001",
+    "FBT002",
+    "PERF401",
+    "PGH003",
+    "PLR2004",
+    "SIM102",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"python/tests/*" = ["ANN", "ARG", "D", "PLR", "RUF", "S"]

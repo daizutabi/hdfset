@@ -1,0 +1,22 @@
+{
+  "image": "mcr.microsoft.com/vscode/devcontainers/base:ubuntu24.04",
+  "features": {
+    "ghcr.io/devcontainers-contrib/features/starship:1": {}
+  },
+  "containerEnv": {
+    "PYO3_PYTHON": "/workspaces/hdfset/.venv/bin/python"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "charliermarsh.ruff",
+        "fill-labs.dependi",
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "tamasfe.even-better-toml",
+        "rust-lang.rust-analyzer"
+      ]
+    }
+  },
+  "postCreateCommand": ".devcontainer/postCreate.sh"
+}
