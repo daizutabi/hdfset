@@ -1,7 +1,5 @@
 {
-  "build": {
-    "dockerfile": "Dockerfile"
-  },
+  "image": "mcr.microsoft.com/vscode/devcontainers/base:ubuntu24.04",
   "features": {
     "ghcr.io/devcontainers-contrib/features/starship:1": {}
   },
@@ -12,8 +10,7 @@
         "fill-labs.dependi",
         "ms-python.python",
         "ms-python.vscode-pylance",
-        "tamasfe.even-better-toml",
-        "rust-lang.rust-analyzer"
+        "tamasfe.even-better-toml"
       ]
     }
   },

@@ -1,10 +1,10 @@
 [build-system]
-requires = ["maturin>=1.0,<2.0"]
-build-backend = "maturin"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "hdfset"
-version = "0.0.1"
+version = "0.1.0"
 authors = [{ name = "daizutabi", email = "daizutabi@gmail.com" }]
 description = "A Python package for reading and writing HDF5 files."
 readme = "README.md"
@@ -17,7 +17,7 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
 ]
 requires-python = ">=3.10"
-dependencies = []
+dependencies = ["pandas>=2", "tables"]
 
 [project.urls]
 Documentation = "https://daizutabi.github.io/hdfset/"
@@ -33,31 +33,26 @@ dev-dependencies = [
     "ruff",
 ]
 
-[tool.maturin]
-python-source = "python"
-features = ["pyo3/extension-module"]
+[tool.hatch.build.targets.sdist]
+exclude = ["/.github", "/docs"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/hdfset"]
 
 [tool.pytest.ini_options]
 addopts = ["--doctest-modules", "--cov=hdfset", "--cov-report=lcov:lcov.info"]
 doctest_optionflags = ["NORMALIZE_WHITESPACE", "IGNORE_EXCEPTION_DETAIL"]
-filterwarnings = [
-    'ignore:datetime.datetime.utcfromtimestamp\(\) is deprecated:DeprecationWarning',
-    'ignore:\nPyarrow will become a required dependency:DeprecationWarning',
-]
+filterwarnings = []
 
 [tool.coverage.run]
 disable_warnings = ["module-not-measured"]
 
 [tool.coverage.report]
-exclude_lines = [
-    "except ImportError",
-    "if TYPE_CHECKING:",
-    "raise NotImplementedError",
-]
+exclude_lines = ["no cov", "raise NotImplementedError", "if TYPE_CHECKING:"]
 
 [tool.ruff]
 line-length = 88
-target-version = "py310"
+target-version = "py311"
 
 [tool.ruff.lint]
 select = ["ALL"]
@@ -72,13 +67,16 @@ ignore = [
     "D107",
     "D203",
     "D213",
+    "EM101",
     "FBT001",
     "FBT002",
+    "PD901",
     "PERF401",
     "PGH003",
     "PLR2004",
     "SIM102",
+    "TRY003",
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"python/tests/*" = ["ANN", "ARG", "D", "PLR", "RUF", "S"]
+"tests/*" = ["ANN", "ARG", "D", "PLR", "RUF", "S"]

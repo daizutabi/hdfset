@@ -27,6 +27,3 @@ format = '([$modified]($style)) '
 format = '[${symbol}${pyenv_prefix}(${version} )(\($virtualenv\) )]($style)'
 symbol = ' '
 style = 'yellow'
-
-[rust]
-format = '[$symbol($version)]($style) '
