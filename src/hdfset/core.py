@@ -2,12 +2,13 @@ from __future__ import annotations
 
 from itertools import chain
 from pathlib import Path
-from typing import TYPE_CHECKING, Self
+from typing import TYPE_CHECKING
 
 from pandas import DataFrame, HDFStore, Series
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
+    from typing import Self
 
 
 class DataSet:
