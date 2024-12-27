@@ -19,12 +19,12 @@ def test_id_error(tmp_path):
 
 
 @pytest.fixture(scope="module")
-def dataframes() -> list[DataFrame]:
+def dataframes() -> list[DataFrame | None]:
     df1 = pd.DataFrame({"id": [1, 2, 3], "a": [4, 5, 6], "b": [7, 8, 9]})
     df2 = pd.DataFrame(
         {"id": [1, 1, 2, 2, 3, 3], "x": range(10, 16), "y": range(20, 26)},
     )
-    return [df1, df2]
+    return [df1, None, df2]
 
 
 @pytest.fixture(scope="module")
@@ -62,7 +62,7 @@ def test_storers(dataset: DataSet):
 
 
 def test_len(dataset: DataSet):
-    assert dataset.store.keys() == ["/_0", "/_1"]
+    assert dataset.store.keys() == ["/_0", "/_2"]
     assert len(dataset) == 2
 
 
@@ -84,7 +84,7 @@ def test_str(dataset: DataSet):
 
 @pytest.mark.parametrize(
     ("columns", "expected"),
-    [("id", "/_0"), (["a", "b"], "/_0"), ("x", "/_1"), (["x", "y"], "/_1")],
+    [("id", "/_0"), (["a", "b"], "/_0"), ("x", "/_2"), (["x", "y"], "/_2")],
 )
 def test_index(dataset: DataSet, columns: str | list[str], expected: str):
     assert dataset.index(columns) == expected
@@ -97,7 +97,7 @@ def test_index_error(dataset: DataSet):
 
 def test_index_dict(dataset: DataSet):
     a = dataset.get_index_dict(["a", "b", ("x", "y")])
-    b = {"a": "/_0", "b": "/_0", "x": "/_1", "y": "/_1"}
+    b = {"a": "/_0", "b": "/_0", "x": "/_2", "y": "/_2"}
     assert a == b
 
 
@@ -116,6 +116,27 @@ def test_query_string(kwargs, expected):
     from hdfset.core import query_string
 
     assert query_string(**kwargs) == expected
+
+
+def test_select_int(dataset: DataSet, dataframes: list[DataFrame]):
+    for i, df in enumerate(dataframes):
+        ref = dataset.select(i)
+        if df is None:
+            assert ref is None
+        else:
+            assert isinstance(ref, DataFrame)
+            assert ref.equals(df)
+
+
+def test_select_str(dataset: DataSet, dataframes: list[DataFrame]):
+    for i, df in enumerate(dataframes):
+        if df is None:
+            continue
+
+        key = DataSet.key(i)
+        ref = dataset.select(key)
+        assert isinstance(ref, DataFrame)
+        assert ref.equals(df)
 
 
 def test_get_series(dataset: DataSet):

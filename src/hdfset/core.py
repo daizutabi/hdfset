@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from itertools import chain
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, overload
 
 from pandas import DataFrame, HDFStore, Series
 
@@ -22,20 +22,28 @@ class DataSet:
         self.id = self.id_column
 
     @staticmethod
-    def to_hdf(path: str | Path, dataframes: list[DataFrame]) -> None:
+    def key(index: int) -> str:
+        return f"_{index}"
+
+    @staticmethod
+    def to_hdf(path: str | Path, dataframes: list[DataFrame | None]) -> None:
         """Save a list of DataFrames to an HDF5 file.
 
         Args:
             path (str or Path): The file path where the data will be saved.
-            dataframes (list of DataFrame): A list of DataFrames to be saved.
+            dataframes (list of DataFrame or None): A list of DataFrames to be saved.
+                If a DataFrame is None, it will be skipped.
         """
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
 
         for k, df in enumerate(dataframes):
+            if df is None:
+                continue
+
             df.to_hdf(
                 path,
-                key=f"_{k}",
+                key=DataSet.key(k),
                 complevel=9,
                 complib="blosc",
                 format="table",
@@ -109,6 +117,20 @@ class DataSet:
 
         return index_dict
 
+    @overload
+    def select(self, index: int, *args, **kwargs) -> DataFrame | Series | None: ...
+
+    @overload
+    def select(self, index: str, *args, **kwargs) -> DataFrame | Series: ...
+
+    def select(self, index: int | str, *args, **kwargs) -> DataFrame | Series | None:
+        if isinstance(index, int):
+            index = DataSet.key(index)
+            if index not in self.store:
+                return None
+
+        return self.store.select(index, *args, **kwargs)
+
     def get(
         self,
         columns: str | list[str] | list[str | tuple[str, ...]],
@@ -142,7 +164,7 @@ class DataSet:
             query_dict.update(subkwargs)
 
             where = query_string(**query_dict) if query_dict else None
-            sub = self.store.select(index, where, columns=subcolumns)
+            sub = self.select(index, where, columns=subcolumns)
 
             if query_dict:
                 selected_ids = sub[self.id].drop_duplicates().tolist()
