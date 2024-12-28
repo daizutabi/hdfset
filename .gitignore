@@ -1,6 +1,5 @@
 .coverage
 .venv/
-/target
 __pycache__/
 dist/
 lcov.info
