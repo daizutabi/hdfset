@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from itertools import chain
 from pathlib import Path
-from typing import TYPE_CHECKING, overload
+from typing import TYPE_CHECKING
 
 from pandas import DataFrame, HDFStore, Series
 
@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from typing import Self
 
 
-class DataSet:
+class BaseDataSet:
     path: Path
     store: HDFStore
     id: str
@@ -43,7 +43,7 @@ class DataSet:
 
             df.to_hdf(
                 path,
-                key=DataSet.key(k),
+                key=BaseDataSet.key(k),
                 complevel=9,
                 complib="blosc",
                 format="table",
@@ -51,7 +51,7 @@ class DataSet:
             )
 
     def __repr__(self) -> str:
-        return f"<DataSet({self.path.stem!r})>"
+        return f"<{self.__class__.__name__}({self.path.stem!r})>"
 
     def __enter__(self) -> Self:
         return self
@@ -117,17 +117,19 @@ class DataSet:
 
         return index_dict
 
-    @overload
-    def select(self, index: int, *args, **kwargs) -> DataFrame | Series | None: ...
-
-    @overload
-    def select(self, index: str, *args, **kwargs) -> DataFrame | Series: ...
-
-    def select(self, index: int | str, *args, **kwargs) -> DataFrame | Series | None:
+    def select(
+        self,
+        index: int | str,
+        # where: dict | None = None,
+        *args,
+        **kwargs,
+    ) -> DataFrame | Series:
         if isinstance(index, int):
-            index = DataSet.key(index)
+            index = BaseDataSet.key(index)
+
             if index not in self.store:
-                return None
+                msg = "The specified index was not found."
+                raise IndexError(msg)
 
         return self.store.select(index, *args, **kwargs)
 
@@ -163,7 +165,7 @@ class DataSet:
             query_dict = {self.id: selected_ids} if selected_ids else {}
             query_dict.update(subkwargs)
 
-            where = query_string(**query_dict) if query_dict else None
+            where = query_string(query_dict) if query_dict else None
             sub = self.select(index, where, columns=subcolumns)
 
             if query_dict:
@@ -192,11 +194,14 @@ class DataSet:
         raise NotImplementedError
 
 
-def query_string(*args, **kwargs) -> str:
+def query_string(where: dict | None = None) -> str:
     """Return the query string for HDF5."""
-    queries = list(args)
+    if where is None:
+        return ""
 
-    for key, value in kwargs.items():
+    queries = []
+
+    for key, value in where.items():
         if isinstance(value, tuple):
             if value[0] is None:
                 queries.append(f"{key}<={value[1]}")

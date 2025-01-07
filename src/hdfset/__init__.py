@@ -1,3 +1,3 @@
-from hdfset.core import DataSet
+from hdfset.base import BaseDataSet
 
-__all__ = ["DataSet"]
+__all__ = ["BaseDataSet"]
