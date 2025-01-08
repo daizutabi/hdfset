@@ -14,16 +14,16 @@ if TYPE_CHECKING:
 class BaseDataSet:
     path: Path
     store: HDFStore
-    id: str
+    id: str | None
 
     def __init__(self, path: str | Path) -> None:
         self.path = Path(path)
         self.store = HDFStore(self.path, mode="r")
-        self.id = self.id_column
+        self.id = None
 
     @staticmethod
     def key(index: int) -> str:
-        return f"_{index}"
+        return f"/_{index}"
 
     @staticmethod
     def to_hdf(path: str | Path, dataframes: list[DataFrame | None]) -> None:
@@ -70,17 +70,6 @@ class BaseDataSet:
         return (storer.data_columns for storer in self.storers())
 
     @property
-    def id_column(self) -> str:
-        columns = set.intersection(*[set(x) for x in self])
-
-        if len(columns) != 1:
-            self.store.close()
-            msg = "The number of id columns is not equal to 1."
-            raise ValueError(msg)
-
-        return columns.pop()
-
-    @property
     def columns(self) -> list[str]:
         return list(chain.from_iterable(self))
 
@@ -120,18 +109,31 @@ class BaseDataSet:
     def select(
         self,
         index: int | str,
-        # where: dict | None = None,
+        where: str | dict | None = None,
         *args,
         **kwargs,
     ) -> DataFrame | Series:
         if isinstance(index, int):
-            index = BaseDataSet.key(index)
+            index = self.key(index)
 
             if index not in self.store:
                 msg = "The specified index was not found."
                 raise IndexError(msg)
 
-        return self.store.select(index, *args, **kwargs)
+        if isinstance(where, dict):
+            where = query_string(where)
+
+        return self.store.select(index, where, *args, **kwargs)
+
+    def get_id_column(self) -> str:
+        columns = set.intersection(*[set(x) for x in self])
+
+        if len(columns) != 1:
+            self.store.close()
+            msg = "The number of id columns is not equal to 1."
+            raise ValueError(msg)
+
+        return columns.pop()
 
     def get(
         self,
@@ -148,6 +150,9 @@ class BaseDataSet:
         if isinstance(columns, str):
             return self.get([columns], **kwargs)[columns]
 
+        if self.id is None:
+            self.id = self.get_id_column()
+
         column_indexes = self.get_index_dict(columns)
         kwarg_indexes = self.get_index_dict(kwargs.keys())
         indexes = sorted(set(column_indexes.values()).union(kwarg_indexes.values()))
@@ -162,14 +167,13 @@ class BaseDataSet:
             if self.id not in subcolumns:
                 subcolumns = [self.id, *subcolumns]
 
-            query_dict = {self.id: selected_ids} if selected_ids else {}
-            query_dict.update(subkwargs)
+            where = {self.id: selected_ids} if selected_ids else {}
+            where.update(subkwargs)
 
-            where = query_string(query_dict) if query_dict else None
             sub = self.select(index, where, columns=subcolumns)
 
-            if query_dict:
-                selected_ids = sub[self.id].drop_duplicates().tolist()
+            if where:
+                selected_ids = sub[self.id].drop_duplicates().to_list()
                 if len(selected_ids) > 1000:
                     selected_ids = None
 

@@ -1,29 +1,16 @@
 from pathlib import Path
 
-import pandas as pd
 import pytest
 from pandas import DataFrame, HDFStore, Series
 
-from hdfset import BaseDataSet
-
-
-def test_id_error(tmp_path):
-    path = tmp_path / "test.h5"
-    df1 = pd.DataFrame({"a": [4, 5, 6], "b": [7, 8, 9]})
-    df2 = pd.DataFrame({"x": [0, 1, 2], "y": [3, 4, 5]})
-    BaseDataSet.to_hdf(path, [df1, df2])
-
-    m = "The number of id columns is not equal to 1."
-    with pytest.raises(ValueError, match=m):
-        BaseDataSet(path)
+from hdfset.base import BaseDataSet
+from hdfset.data import DataSet
 
 
 @pytest.fixture(scope="module")
 def dataframes() -> list[DataFrame | None]:
-    df1 = pd.DataFrame({"id": [1, 2, 3], "a": [4, 5, 6], "b": [7, 8, 9]})
-    df2 = pd.DataFrame(
-        {"id": [1, 1, 2, 2, 3, 3], "x": range(10, 16), "y": range(20, 26)},
-    )
+    df1 = DataFrame({"id": [1, 2, 3], "a": [4, 5, 6], "b": [7, 8, 9]})
+    df2 = DataFrame({"id": [1, 1, 2, 2, 3, 3], "x": range(10, 16), "y": range(20, 26)})
     return [df1, None, df2]
 
 
@@ -40,22 +27,24 @@ def store(path: Path):
         yield store
 
 
-@pytest.fixture
-def dataset(path: Path):
-    with BaseDataSet(path) as dataset:
+@pytest.fixture(params=[BaseDataSet, DataSet])
+def dataset(path: Path, request: pytest.FixtureRequest):
+    cls = request.param
+
+    with cls(path) as dataset:
         yield dataset
 
 
 def test_id(dataset: BaseDataSet):
-    assert dataset.id == "id"
+    assert dataset.get_id_column() == "id"
 
 
 def test_repr(dataset: BaseDataSet):
-    assert repr(dataset) == "<BaseDataSet('test')>"
+    assert repr(dataset).endswith("DataSet('test')>")
 
 
 def test_str(dataset: BaseDataSet):
-    assert str(dataset) == "BaseDataSet((3, 6))"
+    assert str(dataset).endswith("DataSet((3, 6))")
 
 
 def test_storers(dataset: BaseDataSet):
@@ -125,92 +114,78 @@ def test_query_string_none(where):
     assert query_string(where) == ""
 
 
-def test_select_int(dataset: BaseDataSet, dataframes: list[DataFrame]):
-    for i, df in enumerate(dataframes):
-        if df is None:
-            continue
-
-        ref = dataset.select(i)
-        assert isinstance(ref, DataFrame)
-        assert ref.equals(df)
+@pytest.mark.parametrize(("index", "i"), [(0, 0), (2, 2), ("/_0", 0), ("/_2", 2)])
+def test_select(dataset: BaseDataSet, dataframes: list[DataFrame], index, i):
+    df = dataset.select(index)
+    assert isinstance(df, DataFrame)
+    assert df.equals(dataframes[i])
 
 
-def test_select_int_error(dataset: BaseDataSet):
+def test_select_error(dataset: BaseDataSet):
     with pytest.raises(IndexError):
         dataset.select(1)
-
-
-def test_select_str(dataset: BaseDataSet, dataframes: list[DataFrame]):
-    for i, df in enumerate(dataframes):
-        if df is None:
-            continue
-
-        key = BaseDataSet.key(i)
-        ref = dataset.select(key)
-        assert isinstance(ref, DataFrame)
-        assert ref.equals(df)
 
 
 def test_get_series(dataset: BaseDataSet):
     s = dataset.get("a")
     assert isinstance(s, Series)
-    assert s.tolist() == [4, 5, 6]
+    assert s.to_list() == [4, 5, 6]
 
 
 def test_get_frame(dataset: BaseDataSet):
     df = dataset.get(["a", "b"])
     assert isinstance(df, DataFrame)
     assert df.shape == (3, 2)
-    assert df["a"].tolist() == [4, 5, 6]
-    assert df["b"].tolist() == [7, 8, 9]
+    assert df["a"].to_list() == [4, 5, 6]
+    assert df["b"].to_list() == [7, 8, 9]
 
 
 def test_get_merge(dataset: BaseDataSet):
     df = dataset.get(["a", "x"])
     assert isinstance(df, DataFrame)
     assert df.shape == (6, 2)
-    assert df["a"].tolist() == [4, 4, 5, 5, 6, 6]
-    assert df["x"].tolist() == list(range(10, 16))
+    assert df["a"].to_list() == [4, 4, 5, 5, 6, 6]
+    assert df["x"].to_list() == list(range(10, 16))
 
 
 def test_get_tuple(dataset: BaseDataSet):
     df = dataset.get(["a", "b", ("x", "y")])
     assert isinstance(df, DataFrame)
     assert df.shape == (6, 4)
-    assert df["a"].tolist() == [4, 4, 5, 5, 6, 6]
-    assert df["b"].tolist() == [7, 7, 8, 8, 9, 9]
-    assert df["x"].tolist() == list(range(10, 16))
-    assert df["y"].tolist() == list(range(20, 26))
+    assert df["a"].to_list() == [4, 4, 5, 5, 6, 6]
+    assert df["b"].to_list() == [7, 7, 8, 8, 9, 9]
+    assert df["x"].to_list() == list(range(10, 16))
+    assert df["y"].to_list() == list(range(20, 26))
 
 
 def test_get_where_value(dataset: BaseDataSet):
     df = dataset.get(["a", "b", "x", "y"], a=4)
     assert isinstance(df, DataFrame)
     assert df.shape == (2, 4)
-    assert df["a"].tolist() == [4, 4]
-    assert df["b"].tolist() == [7, 7]
-    assert df["x"].tolist() == [10, 11]
-    assert df["y"].tolist() == [20, 21]
+    assert df["a"].to_list() == [4, 4]
+    assert df["b"].to_list() == [7, 7]
+    assert df["x"].to_list() == [10, 11]
+    assert df["y"].to_list() == [20, 21]
 
 
 def test_get_where_list(dataset: BaseDataSet):
     df = dataset.get(["a", "b", "x", "y"], a=[4, 6])
     assert isinstance(df, DataFrame)
     assert df.shape == (4, 4)
-    assert df["a"].tolist() == [4, 4, 6, 6]
-    assert df["b"].tolist() == [7, 7, 9, 9]
-    assert df["x"].tolist() == [10, 11, 14, 15]
-    assert df["y"].tolist() == [20, 21, 24, 25]
+    assert df["a"].to_list() == [4, 4, 6, 6]
+    assert df["b"].to_list() == [7, 7, 9, 9]
+    assert df["x"].to_list() == [10, 11, 14, 15]
+    assert df["y"].to_list() == [20, 21, 24, 25]
 
 
 def test_get_where_tuple(dataset: BaseDataSet):
     df = dataset.get(["a", "b", "x", "y"], b=(8, 9))
     assert isinstance(df, DataFrame)
     assert df.shape == (4, 4)
-    assert df["a"].tolist() == [5, 5, 6, 6]
-    assert df["b"].tolist() == [8, 8, 9, 9]
-    assert df["x"].tolist() == [12, 13, 14, 15]
-    assert df["y"].tolist() == [22, 23, 24, 25]
+    assert df["a"].to_list() == [5, 5, 6, 6]
+    assert df["b"].to_list() == [8, 8, 9, 9]
+    assert df["x"].to_list() == [12, 13, 14, 15]
+    assert df["y"].to_list() == [22, 23, 24, 25]
 
 
 def test_get_where_empty(dataset: BaseDataSet):
@@ -223,20 +198,20 @@ def test_get_where_tuple_none_first(dataset: BaseDataSet):
     df = dataset.get(["a", "b", "x", "y"], x=(None, 12))
     assert isinstance(df, DataFrame)
     assert df.shape == (3, 4)
-    assert df["a"].tolist() == [4, 4, 5]
-    assert df["b"].tolist() == [7, 7, 8]
-    assert df["x"].tolist() == [10, 11, 12]
-    assert df["y"].tolist() == [20, 21, 22]
+    assert df["a"].to_list() == [4, 4, 5]
+    assert df["b"].to_list() == [7, 7, 8]
+    assert df["x"].to_list() == [10, 11, 12]
+    assert df["y"].to_list() == [20, 21, 22]
 
 
 def test_get_where_tuple_none_second(dataset: BaseDataSet):
     df = dataset.get(["a", "b", "x", "y"], y=(24, None))
     assert isinstance(df, DataFrame)
     assert df.shape == (2, 4)
-    assert df["a"].tolist() == [6, 6]
-    assert df["b"].tolist() == [9, 9]
-    assert df["x"].tolist() == [14, 15]
-    assert df["y"].tolist() == [24, 25]
+    assert df["a"].to_list() == [6, 6]
+    assert df["b"].to_list() == [9, 9]
+    assert df["x"].to_list() == [14, 15]
+    assert df["y"].to_list() == [24, 25]
 
 
 def test_get_error(dataset: BaseDataSet):
@@ -248,26 +223,41 @@ def test_get_error(dataset: BaseDataSet):
 def test_getitem_int(dataset: BaseDataSet):
     s = dataset[0]
     assert isinstance(s, Series)
-    assert s.tolist() == [1, 2, 3]
+    assert s.to_list() == [1, 2, 3]
 
 
 def test_getitem_series(dataset: BaseDataSet):
     s = dataset["a"]
     assert isinstance(s, Series)
-    assert s.tolist() == [4, 5, 6]
+    assert s.to_list() == [4, 5, 6]
 
 
 def test_getitem_frame(dataset: BaseDataSet):
     df = dataset[["a", "b"]]
     assert isinstance(df, DataFrame)
     assert df.shape == (3, 2)
-    assert df["a"].tolist() == [4, 5, 6]
-    assert df["b"].tolist() == [7, 8, 9]
+    assert df["a"].to_list() == [4, 5, 6]
+    assert df["b"].to_list() == [7, 8, 9]
 
 
 def test_getitem_merge(dataset: BaseDataSet):
     df = dataset[["a", "x"]]
     assert isinstance(df, DataFrame)
     assert df.shape == (6, 2)
-    assert df["a"].tolist() == [4, 4, 5, 5, 6, 6]
-    assert df["x"].tolist() == list(range(10, 16))
+    assert df["a"].to_list() == [4, 4, 5, 5, 6, 6]
+    assert df["x"].to_list() == list(range(10, 16))
+
+
+def test_id_error(tmp_path):
+    path = tmp_path / "test.h5"
+    df1 = DataFrame({"a": [4, 5, 6], "b": [7, 8, 9]})
+    df2 = DataFrame({"x": [0, 1, 2], "y": [3, 4, 5]})
+
+    BaseDataSet.to_hdf(path, [df1, df2])
+
+    with BaseDataSet(path) as dataset:
+        assert dataset.id is None
+
+        m = "The number of id columns is not equal to 1."
+        with pytest.raises(ValueError, match=m):
+            dataset.get_id_column()
