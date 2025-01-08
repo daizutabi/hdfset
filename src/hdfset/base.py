@@ -10,6 +10,8 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
     from typing import Self
 
+NUM_ID_LIMIT = 1000
+
 
 class BaseDataSet:
     path: Path
@@ -174,7 +176,7 @@ class BaseDataSet:
 
             if where:
                 selected_ids = sub[self.id].drop_duplicates().to_list()
-                if len(selected_ids) > 1000:
+                if len(selected_ids) > NUM_ID_LIMIT:
                     selected_ids = None
 
             how = "inner" if kwargs else "left"
