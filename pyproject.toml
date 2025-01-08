@@ -26,7 +26,6 @@ Issues = "https://github.com/daizutabi/hdfset/issues"
 [tool.uv]
 dev-dependencies = [
     "pytest-clarity>=1",
-    "pandas-stubs>=2.2",
     "pytest-cov>=6.0",
     "pytest-randomly>=3.16",
     "pytest-xdist>=3.6",
