@@ -327,3 +327,15 @@ def test_get_where_tuple_xy(dataset: DataSet, columns):
     assert df["c"].to_list() == [14, 14, 15]
     assert df["x"].to_list() == [10, 11, 12]
     assert df["y"].to_list() == [20, 21, 22]
+
+
+def test_invalid_series(tmp_path: Path):
+    s = Series([1, 2, 3])
+    df = DataFrame([[1, 2, 3], [4, 5, 6]])
+
+    path = tmp_path / "test.h5"
+    s.to_hdf(path, key="/_0")
+    df.to_hdf(path, key="/_1")
+
+    with pytest.raises(TypeError):
+        DataSet(path)

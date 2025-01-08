@@ -21,6 +21,7 @@ class DataSet(BaseDataSet):
         df = self.store.select(self.key(0))
 
         if not isinstance(df, DataFrame):
+            self.store.close()
             msg = "The first DataFrame is not a valid DataFrame."
             raise TypeError(msg)
 

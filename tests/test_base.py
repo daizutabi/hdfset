@@ -261,3 +261,16 @@ def test_id_error(tmp_path):
         m = "The number of id columns is not equal to 1."
         with pytest.raises(ValueError, match=m):
             dataset.get_id_column()
+
+
+def test_id_len_limit(tmp_path: Path):
+    df1 = DataFrame({"id": range(2000), "a": range(2000)})
+    df2 = DataFrame({"id": range(2000), "b": range(10000, 12000)})
+
+    path = tmp_path / "test.h5"
+    BaseDataSet.to_hdf(path, [df1, df2])
+
+    with BaseDataSet(path) as dataset:
+        df = dataset.get(["a", "b"], a=(0, 1500))
+        assert df.shape == (1501, 2)
+        assert df.iloc[-1].to_list() == [1500, 11500]
