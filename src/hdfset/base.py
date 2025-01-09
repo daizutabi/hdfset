@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from itertools import chain
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, overload
 
 from pandas import DataFrame, HDFStore, Series
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator
+    from collections.abc import Iterable, Iterator, Sequence
     from typing import Self
 
 NUM_ID_LIMIT = 1000
@@ -137,9 +137,15 @@ class BaseDataSet:
 
         return columns.pop()
 
+    @overload
+    def get(self, columns: str, **kwargs) -> Series: ...
+
+    @overload
+    def get(self, columns: list[str | tuple[str, ...]], **kwargs) -> DataFrame: ...
+
     def get(
         self,
-        columns: str | list[str] | list[str | tuple[str, ...]],
+        columns: str | list[str | tuple[str, ...]],
         **kwargs,
     ) -> DataFrame | Series:
         """Extract necessary data from multiple DataFrames.
@@ -187,9 +193,15 @@ class BaseDataSet:
 
         return df[list(flatten(columns))]
 
+    @overload
+    def __getitem__(self, index: int | str) -> Series: ...
+
+    @overload
+    def __getitem__(self, index: Sequence[str | tuple[str, ...]]) -> DataFrame: ...
+
     def __getitem__(
         self,
-        index: int | str | list[str] | list[str | tuple[str, ...]],
+        index: int | str | Sequence[str | tuple[str, ...]],
     ) -> DataFrame | Series:
         if isinstance(index, int):
             return self.get(self.columns[index])
@@ -221,7 +233,7 @@ def query_string(where: dict | None = None) -> str:
     return " and ".join(queries)
 
 
-def flatten(columns: list[str] | list[str | tuple[str, ...]]) -> Iterator[str]:
+def flatten(columns: Iterable[str | tuple[str, ...]]) -> Iterator[str]:
     """
     Example:
         >>> list(flatten(['a', 'b', ('c', 'd')]))

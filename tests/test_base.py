@@ -121,6 +121,11 @@ def test_select(dataset: BaseDataSet, dataframes: list[DataFrame], index, i):
     assert df.equals(dataframes[i])
 
 
+def test_select_columns_dataframe(dataset: BaseDataSet):
+    df = dataset.select(0, columns=["a", "b"])
+    assert isinstance(df, DataFrame)
+
+
 def test_select_error(dataset: BaseDataSet):
     with pytest.raises(IndexError):
         dataset.select(1)
@@ -242,6 +247,14 @@ def test_getitem_frame(dataset: BaseDataSet):
 
 def test_getitem_merge(dataset: BaseDataSet):
     df = dataset[["a", "x"]]
+    assert isinstance(df, DataFrame)
+    assert df.shape == (6, 2)
+    assert df["a"].to_list() == [4, 4, 5, 5, 6, 6]
+    assert df["x"].to_list() == list(range(10, 16))
+
+
+def test_getitem_merge_tuple(dataset: BaseDataSet):
+    df = dataset[["a", ("x",)]]
     assert isinstance(df, DataFrame)
     assert df.shape == (6, 2)
     assert df["a"].to_list() == [4, 4, 5, 5, 6, 6]
