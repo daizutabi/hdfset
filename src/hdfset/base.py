@@ -141,11 +141,11 @@ class BaseDataSet:
     def get(self, columns: str, **kwargs) -> Series: ...
 
     @overload
-    def get(self, columns: list[str | tuple[str, ...]], **kwargs) -> DataFrame: ...
+    def get(self, columns: Sequence[str | tuple[str, ...]], **kwargs) -> DataFrame: ...
 
     def get(
         self,
-        columns: str | list[str | tuple[str, ...]],
+        columns: str | Sequence[str | tuple[str, ...]],
         **kwargs,
     ) -> DataFrame | Series:
         """Extract necessary data from multiple DataFrames.
