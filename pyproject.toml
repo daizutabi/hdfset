@@ -29,7 +29,6 @@ dev-dependencies = [
     "pytest-cov>=6.0",
     "pytest-randomly>=3.16",
     "pytest-xdist>=3.6",
-    "ruff>=0.8",
 ]
 
 [tool.hatch.build.targets.sdist]
