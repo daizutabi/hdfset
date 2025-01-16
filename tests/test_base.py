@@ -67,6 +67,11 @@ def test_columns(dataset: BaseDataSet):
     assert dataset.columns == ["id", "a", "b", "id", "x", "y"]
 
 
+def test_contains(dataset: BaseDataSet):
+    assert "id" in dataset
+    assert "unknown" not in dataset
+
+
 def test_length(dataset: BaseDataSet):
     assert dataset.length == (3, 6)
 

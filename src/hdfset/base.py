@@ -75,6 +75,9 @@ class BaseDataSet:
     def columns(self) -> list[str]:
         return list(chain.from_iterable(self))
 
+    def __contains__(self, column: str) -> bool:
+        return any(column in columns for columns in self)
+
     @property
     def length(self) -> tuple[int, ...]:
         return tuple(int(storer.nrows) for storer in self.storers())
