@@ -64,10 +64,6 @@ ignore = [
     "ARG001",
     "ARG002",
     "D",
-    "D105",
-    "D107",
-    "D203",
-    "D213",
     "EM101",
     "ERA001",
     "FBT001",
@@ -81,4 +77,4 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["ANN", "ARG", "D", "PLR", "RUF", "S"]
+"tests/*" = ["ANN", "ARG", "PLR", "RUF", "S"]
