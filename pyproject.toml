@@ -5,10 +5,10 @@ build-backend = "hatchling.build"
 [project]
 name = "hdfset"
 version = "0.2.7"
-authors = [{ name = "daizutabi", email = "daizutabi@gmail.com" }]
 description = "A Python package for reading and writing HDF5 files."
 readme = "README.md"
 license = { file = "LICENSE" }
+authors = [{ name = "daizutabi", email = "daizutabi@gmail.com" }]
 classifiers = [
     "Programming Language :: Python",
     "Programming Language :: Python :: 3.10",
