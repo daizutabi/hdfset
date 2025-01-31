@@ -237,10 +237,19 @@ def query_string(where: dict | None = None) -> str:
 
 
 def flatten(columns: Iterable[str | tuple[str, ...]]) -> Iterator[str]:
-    """
+    """Flatten the columns removing tuples.
+
+    Args:
+        columns (Iterable[str | tuple[str, ...]]): The columns to flatten
+            which may contain tuples.
+
+    Yields:
+        str: The flattened columns.
+
     Example:
-        >>> list(flatten(['a', 'b', ('c', 'd')]))
+        >>> list(flatten(["a", "b", ("c", "d")]))
         ['a', 'b', 'c', 'd']
+
     """
     for column in columns:
         if not isinstance(column, str):
