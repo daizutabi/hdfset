@@ -20,7 +20,7 @@ requires-python = ">=3.10"
 dependencies = ["pandas>=2", "tables>=3"]
 
 [project.urls]
-Documentation = "https://daizutabi.github.io/hdfset/"
+Documentation = "https://github.com/daizutabi/hdfset"
 Source = "https://github.com/daizutabi/hdfset"
 Issues = "https://github.com/daizutabi/hdfset/issues"
 
@@ -32,19 +32,8 @@ dev-dependencies = [
   "pytest-xdist>=3.6",
 ]
 
-[tool.hatch.build.targets.sdist]
-exclude = ["/.github", "/docs"]
-
-[tool.hatch.build.targets.wheel]
-packages = ["src/hdfset"]
-
 [tool.pytest.ini_options]
 addopts = ["--doctest-modules", "--cov=hdfset", "--cov-report=lcov:lcov.info"]
-doctest_optionflags = ["NORMALIZE_WHITESPACE", "IGNORE_EXCEPTION_DETAIL"]
-filterwarnings = []
-
-[tool.coverage.run]
-disable_warnings = ["module-not-measured"]
 
 [tool.coverage.report]
 exclude_lines = ["no cov", "raise NotImplementedError", "if TYPE_CHECKING:"]
