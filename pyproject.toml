@@ -10,11 +10,11 @@ readme = "README.md"
 license = { file = "LICENSE" }
 authors = [{ name = "daizutabi", email = "daizutabi@gmail.com" }]
 classifiers = [
-    "Programming Language :: Python",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
 ]
 requires-python = ">=3.10"
 dependencies = ["pandas>=2", "tables>=3"]
@@ -26,10 +26,10 @@ Issues = "https://github.com/daizutabi/hdfset/issues"
 
 [tool.uv]
 dev-dependencies = [
-    "pytest-clarity>=1",
-    "pytest-cov>=6.0",
-    "pytest-randomly>=3.16",
-    "pytest-xdist>=3.6",
+  "pytest-clarity>=1",
+  "pytest-cov>=6.0",
+  "pytest-randomly>=3.16",
+  "pytest-xdist>=3.6",
 ]
 
 [tool.hatch.build.targets.sdist]
@@ -58,22 +58,22 @@ target-version = "py311"
 select = ["ALL"]
 unfixable = ["F401"]
 ignore = [
-    "ANN002",
-    "ANN003",
-    "ANN401",
-    "ARG001",
-    "ARG002",
-    "D",
-    "EM101",
-    "ERA001",
-    "FBT001",
-    "FBT002",
-    "PD901",
-    "PERF401",
-    "PGH003",
-    "PLR2004",
-    "SIM102",
-    "TRY003",
+  "ANN002",
+  "ANN003",
+  "ANN401",
+  "ARG001",
+  "ARG002",
+  "D",
+  "EM101",
+  "ERA001",
+  "FBT001",
+  "FBT002",
+  "PD901",
+  "PERF401",
+  "PGH003",
+  "PLR2004",
+  "SIM102",
+  "TRY003",
 ]
 
 [tool.ruff.lint.per-file-ignores]
