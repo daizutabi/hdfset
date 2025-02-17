@@ -24,8 +24,8 @@ Documentation = "https://github.com/daizutabi/hdfset"
 Source = "https://github.com/daizutabi/hdfset"
 Issues = "https://github.com/daizutabi/hdfset/issues"
 
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
   "pytest-clarity>=1",
   "pytest-cov>=6.0",
   "pytest-randomly>=3.16",
