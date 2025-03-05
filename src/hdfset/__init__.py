@@ -1,4 +1,4 @@
-from hdfset.base import BaseDataSet
-from hdfset.data import DataSet
+from hdfset.base import BaseDataset
+from hdfset.dataset import Dataset
 
-__all__ = ["BaseDataSet", "DataSet"]
+__all__ = ["BaseDataset", "Dataset"]
