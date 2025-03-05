@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 NUM_ID_LIMIT = 1000
 
 
-class BaseDataSet:
+class BaseDataset:
     path: Path
     store: HDFStore
     id: str | None
@@ -45,7 +45,7 @@ class BaseDataSet:
 
             df.to_hdf(
                 path,
-                key=BaseDataSet.key(k),
+                key=BaseDataset.key(k),
                 complevel=9,
                 complib="blosc",
                 format="table",

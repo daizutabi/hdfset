@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 from pandas import DataFrame, Series
 
-from hdfset.base import BaseDataSet
+from hdfset.base import BaseDataset
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from typing import Any
 
 
-class DataSet(BaseDataSet):
+class Dataset(BaseDataset):
     df: DataFrame
 
     def __init__(self, path: str | Path) -> None:
