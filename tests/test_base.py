@@ -1,10 +1,15 @@
-from pathlib import Path
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 
 import pytest
 from pandas import DataFrame, HDFStore, Series
 
-from hdfset.base import BaseDataset
+from hdfset.base import BaseDataset, query_string
 from hdfset.dataset import Dataset
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 @pytest.fixture(scope="module")
@@ -15,7 +20,7 @@ def dataframes() -> list[DataFrame | None]:
 
 
 @pytest.fixture(scope="module")
-def path(dataframes, tmp_path_factory):
+def path(dataframes: list[DataFrame | None], tmp_path_factory: pytest.TempPathFactory):
     path = tmp_path_factory.mktemp("test") / "test.h5"
     BaseDataset.to_hdf(path, dataframes)
     return path
@@ -48,10 +53,8 @@ def test_str(dataset: BaseDataset):
 
 
 def test_storers(dataset: BaseDataset):
-    from pandas.io.pytables import AppendableFrameTable  # type: ignore
-
-    for storer in dataset.storers():
-        assert isinstance(storer, AppendableFrameTable)
+    for storer in dataset.storers():  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+        assert storer.__class__.__name__ == "AppendableFrameTable"  # pyright: ignore[reportUnknownMemberType]
 
 
 def test_len(dataset: BaseDataset):
@@ -106,21 +109,22 @@ def test_index_dict(dataset: BaseDataset):
         ({"a": (1, None)}, "a>=1"),
     ],
 )
-def test_query_string(where, expected):
-    from hdfset.base import query_string
-
+def test_query_string(where: dict[str, Any], expected: str):
     assert query_string(where) == expected
 
 
 @pytest.mark.parametrize("where", [None, {}])
-def test_query_string_none(where):
-    from hdfset.base import query_string
-
-    assert query_string(where) == ""
+def test_query_string_none(where: dict[str, Any] | None):
+    assert not query_string(where)
 
 
 @pytest.mark.parametrize(("index", "i"), [(0, 0), (2, 2), ("/_0", 0), ("/_2", 2)])
-def test_select(dataset: BaseDataset, dataframes: list[DataFrame], index, i):
+def test_select(
+    dataset: BaseDataset,
+    dataframes: list[DataFrame],
+    index: str | int,
+    i: int,
+):
     df = dataset.select(index)
     assert isinstance(df, DataFrame)
     assert df.equals(dataframes[i])
@@ -266,7 +270,7 @@ def test_getitem_merge_tuple(dataset: BaseDataset):
     assert df["x"].to_list() == list(range(10, 16))
 
 
-def test_id_error(tmp_path):
+def test_id_error(tmp_path: Path):
     path = tmp_path / "test.h5"
     df1 = DataFrame({"a": [4, 5, 6], "b": [7, 8, 9]})
     df2 = DataFrame({"x": [0, 1, 2], "y": [3, 4, 5]})

@@ -1,10 +1,16 @@
-from pathlib import Path
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pytest
 from pandas import DataFrame, HDFStore, Series
 
-from hdfset.dataset import Dataset
+from hdfset.dataset import Dataset, select, select_by_column
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+    from pathlib import Path
 
 
 @pytest.fixture(scope="module")
@@ -16,7 +22,7 @@ def dataframes():
 
 
 @pytest.fixture(scope="module")
-def df(dataframes):
+def df(dataframes: list[DataFrame]):
     return dataframes[1]
 
 
@@ -30,55 +36,41 @@ def df(dataframes):
         ((1, 2), [[1, 10, 20], [1, 11, 21], [2, 12, 22], [2, 13, 23]]),
     ],
 )
-def test_select_by_column(df: DataFrame, value, x):
-    from hdfset.dataset import select_by_column
-
+def test_select_by_column(df: DataFrame, value: int | list[int], x: list[list[int]]):
     df = select_by_column(df, "id", value)
     np.testing.assert_array_equal(df, x)
 
 
 def test_select(df: DataFrame):
-    from hdfset.dataset import select
-
     assert select(df).equals(df)
 
 
 def test_select_columns(df: DataFrame):
-    from hdfset.dataset import select
-
     assert select(df, columns=["id", "x"]).equals(df[["id", "x"]])
 
 
 def test_select_str(df: DataFrame):
-    from hdfset.dataset import select
-
     df = select(df, "id < 3", columns=["y"])
     np.testing.assert_array_equal(df, [[20], [21], [22], [23]])
 
 
 def test_select_dict_list_list(df: DataFrame):
-    from hdfset.dataset import select
-
     df = select(df, {"id": [1, 3], "x": [10, 13, 15]}, columns=["y"])
     np.testing.assert_array_equal(df, [[20], [25]])
 
 
 def test_select_dict_tuple_list(df: DataFrame):
-    from hdfset.dataset import select
-
     df = select(df, {"id": (1, 3), "x": [10, 13, 15]}, columns=["y"])
     np.testing.assert_array_equal(df, [[20], [23], [25]])
 
 
 def test_select_dict_list_tuple(df: DataFrame):
-    from hdfset.dataset import select
-
     df = select(df, {"id": [1, 3], "x": (10, 13)}, columns=["y"])
     np.testing.assert_array_equal(df, [[20], [21]])
 
 
 @pytest.fixture(scope="module")
-def path(dataframes, tmp_path_factory):
+def path(dataframes: list[DataFrame], tmp_path_factory: pytest.TempPathFactory):
     path = tmp_path_factory.mktemp("test") / "test.h5"
     Dataset.to_hdf(path, dataframes)
     return path
@@ -135,7 +127,7 @@ def test_length(dataset: Dataset):
         (("z", "x"), "/_2"),
     ],
 )
-def test_index(dataset: Dataset, columns, expected: str):
+def test_index(dataset: Dataset, columns: str | tuple[str, ...], expected: str):
     assert dataset.index(columns) == expected
 
 
@@ -148,21 +140,26 @@ def test_index_error(dataset: Dataset):
     ("columns", "u", "v"),
     [(("x", "y"), "/_1", "/_1"), (("x", "z"), "/_2", "/_2")],
 )
-def test_index_dict(dataset: Dataset, columns, u, v):
+def test_index_dict(dataset: Dataset, columns: tuple[str, ...], u: str, v: str):
     a = dataset.get_index_dict(["a", "b", columns])
     b = {"a": "/_0", "b": "/_0", columns[0]: u, columns[1]: v}
     assert a == b
 
 
 @pytest.mark.parametrize(("index", "i"), [(1, 1), (2, 2), ("/_1", 1), ("/_2", 2)])
-def test_dataset_select(dataset: Dataset, dataframes: list[DataFrame], index, i):
+def test_dataset_select(
+    dataset: Dataset,
+    dataframes: list[DataFrame],
+    index: int | str,
+    i: int,
+):
     df = dataset.select(index)
     assert isinstance(df, DataFrame)
     assert df.equals(dataframes[i])
 
 
 @pytest.mark.parametrize("index", [0, "/_0"])
-def test_dataset_select_zero(dataset: Dataset, index):
+def test_dataset_select_zero(dataset: Dataset, index: int | str):
     df = dataset.select(index)
     np.testing.assert_array_equal(df["a"], [4, 5, 6])
     np.testing.assert_array_equal(df["c"], [14, 15, 16])
@@ -179,12 +176,12 @@ def test_dataset_select_int_error(dataset: Dataset):
         ("id", [1, 2, 3]),
         ("a", [4, 5, 6]),
         ("c", [14, 15, 16]),
-        ("x", range(10, 16)),
-        ("y", range(20, 26)),
-        ("z", range(60, 66)),
+        ("x", list(range(10, 16))),
+        ("y", list(range(20, 26))),
+        ("z", list(range(60, 66))),
     ],
 )
-def test_get_series(dataset: Dataset, column, value):
+def test_get_series(dataset: Dataset, column: str, value: list[int]):
     s = dataset.get(column)
     assert isinstance(s, Series)
     assert s.to_list() == list(value)
@@ -206,7 +203,7 @@ def test_get_frame(dataset: Dataset):
         ("z", range(60, 66)),
     ],
 )
-def test_get_merge(dataset: Dataset, column, value):
+def test_get_merge(dataset: Dataset, column: str, value: range):
     df = dataset.get(["c", column])
     assert isinstance(df, DataFrame)
     assert df.shape == (6, 2)
@@ -221,7 +218,7 @@ def test_get_merge(dataset: Dataset, column, value):
         ("z", range(50, 56)),
     ],
 )
-def test_get_tuple(dataset: Dataset, column, value):
+def test_get_tuple(dataset: Dataset, column: str, value: range):
     df = dataset.get(["a", "c", ("x", column)])
     assert isinstance(df, DataFrame)
     assert df.shape == (6, 4)
@@ -238,7 +235,7 @@ def test_get_tuple(dataset: Dataset, column, value):
         (16, "z", [64, 65]),
     ],
 )
-def test_get_where_value(dataset: Dataset, c, column, value):
+def test_get_where_value(dataset: Dataset, c: int, column: str, value: list[int]):
     df = dataset.get(["c", column], c=c)
     assert isinstance(df, DataFrame)
     assert df.shape == (2, 2)
@@ -253,7 +250,13 @@ def test_get_where_value(dataset: Dataset, c, column, value):
         (16, "z", [54, 55], [64, 65]),
     ],
 )
-def test_get_where_value_tuple(dataset: Dataset, c, column, value, cvalue):
+def test_get_where_value_tuple(
+    dataset: Dataset,
+    c: int,
+    column: str,
+    value: list[int],
+    cvalue: list[int],
+):
     df = dataset.get(["c", ("x", column)], c=c)
     assert isinstance(df, DataFrame)
     assert df.shape == (2, 3)
@@ -270,7 +273,7 @@ def test_get_where_value_tuple(dataset: Dataset, c, column, value, cvalue):
         ([14, 16], "z", [60, 61, 64, 65]),
     ],
 )
-def test_get_where_list(dataset: Dataset, c, column, value):
+def test_get_where_list(dataset: Dataset, c: list[int], column: str, value: list[int]):
     df = dataset.get(["a", "c", column], c=c)
     assert isinstance(df, DataFrame)
     assert df.shape == (4, 3)
@@ -287,7 +290,12 @@ def test_get_where_list(dataset: Dataset, c, column, value):
         ((14, 15), "z", range(60, 64)),
     ],
 )
-def test_get_where_tuple(dataset: Dataset, c, column, value):
+def test_get_where_tuple(
+    dataset: Dataset,
+    c: tuple[int, int],
+    column: str,
+    value: range,
+):
     df = dataset.get(["c", column], c=c)
     assert isinstance(df, DataFrame)
     assert df[column].to_list() == list(value)
@@ -306,7 +314,12 @@ def test_get_where_tuple(dataset: Dataset, c, column, value):
         ([14, 15, 16], "z", range(50, 56)),
     ],
 )
-def test_get_where_tuple_column(dataset: Dataset, c, column, value):
+def test_get_where_tuple_column(
+    dataset: Dataset,
+    c: Iterable[int],
+    column: str,
+    value: range,
+):
     df = dataset.get(["c", ("x", column)], c=c)
     assert isinstance(df, DataFrame)
     assert df["x"].to_list() == list(value)
@@ -319,7 +332,10 @@ def test_get_where_empty(dataset: Dataset):
 
 
 @pytest.mark.parametrize("columns", [["a", "c", "x", "y"], ["a", "c", ("x", "y")]])
-def test_get_where_tuple_xy(dataset: Dataset, columns):
+def test_get_where_tuple_xy(
+    dataset: Dataset,
+    columns: list[str] | list[str | tuple[str, ...]],
+):
     df = dataset.get(columns, x=(None, 12))
     assert isinstance(df, DataFrame)
     assert df.shape == (3, 4)

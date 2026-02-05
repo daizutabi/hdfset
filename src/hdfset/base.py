@@ -2,13 +2,17 @@ from __future__ import annotations
 
 from itertools import chain
 from pathlib import Path
-from typing import TYPE_CHECKING, overload
+from typing import TYPE_CHECKING, Any, Self, overload, override
 
 from pandas import DataFrame, HDFStore, Series
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Sequence
-    from typing import Self
+    from types import TracebackType
+
+    from pandas.io.pytables import (
+        Table,  # pyright: ignore[reportAttributeAccessIssue, reportUnknownVariableType]
+    )
 
 NUM_ID_LIMIT = 1000
 
@@ -28,7 +32,7 @@ class BaseDataset:
         return f"/_{index}"
 
     @staticmethod
-    def to_hdf(path: str | Path, dataframes: list[DataFrame | None]) -> None:
+    def to_hdf(path: str | Path, dataframes: Iterable[DataFrame | None]) -> None:
         """Save a list of DataFrames to an HDF5 file.
 
         Args:
@@ -52,24 +56,30 @@ class BaseDataset:
                 data_columns=True,
             )
 
+    @override
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__}({self.path.stem!r})>"
 
     def __enter__(self) -> Self:
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback) -> None:  # noqa: ANN001
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
         self.store.close()
 
     def __len__(self) -> int:
         return len(self.store.keys())
 
-    def storers(self) -> Iterator:
+    def storers(self) -> Iterator[Table]:  # pyright: ignore[reportUnknownParameterType]
         for key in self.store:
-            yield self.store.get_storer(key)  # type: ignore
+            yield self.store.get_storer(key)  # pyright: ignore[reportCallIssue]
 
     def __iter__(self) -> Iterator[list[str]]:
-        return (storer.data_columns for storer in self.storers())
+        return (storer.data_columns for storer in self.storers())  # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType]
 
     @property
     def columns(self) -> list[str]:
@@ -80,8 +90,9 @@ class BaseDataset:
 
     @property
     def length(self) -> tuple[int, ...]:
-        return tuple(int(storer.nrows) for storer in self.storers())
+        return tuple(int(storer.nrows) for storer in self.storers())  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType, reportUnknownArgumentType]
 
+    @override
     def __str__(self) -> str:
         return f"{self.__class__.__name__}({self.length})"
 
@@ -114,9 +125,9 @@ class BaseDataset:
     def select(
         self,
         index: int | str,
-        where: str | dict | None = None,
-        *args,
-        **kwargs,
+        where: str | dict[str, Any] | None = None,
+        *args: Any,
+        **kwargs: Any,
     ) -> DataFrame | Series:
         if isinstance(index, int):
             index = self.key(index)
@@ -128,10 +139,17 @@ class BaseDataset:
         if isinstance(where, dict):
             where = query_string(where)
 
-        return self.store.select(index, where, *args, **kwargs)
+        return self.store.select(
+            index,
+            where,
+            *args,
+            iterator=False,
+            chunksize=None,
+            **kwargs,
+        )
 
     def get_id_column(self) -> str:
-        columns = set.intersection(*[set(x) for x in self])
+        columns = set[str].intersection(*[set(x) for x in self])
 
         if len(columns) != 1:
             self.store.close()
@@ -141,15 +159,19 @@ class BaseDataset:
         return columns.pop()
 
     @overload
-    def get(self, columns: str, **kwargs) -> Series: ...
+    def get(self, columns: str, **kwargs: Any) -> Series: ...
 
     @overload
-    def get(self, columns: Sequence[str | tuple[str, ...]], **kwargs) -> DataFrame: ...
+    def get(
+        self,
+        columns: list[str] | list[str | tuple[str, ...]],
+        **kwargs: Any,
+    ) -> DataFrame: ...
 
     def get(
         self,
-        columns: str | Sequence[str | tuple[str, ...]],
-        **kwargs,
+        columns: str | list[str] | list[str | tuple[str, ...]],
+        **kwargs: Any,
     ) -> DataFrame | Series:
         """Extract necessary data from multiple DataFrames.
 
@@ -215,12 +237,12 @@ class BaseDataset:
         raise NotImplementedError
 
 
-def query_string(where: dict | None = None) -> str:
+def query_string(where: dict[str, Any] | None = None) -> str:
     """Return the query string for HDF5."""
     if where is None:
         return ""
 
-    queries = []
+    queries: list[str] = []
 
     for key, value in where.items():
         if isinstance(value, tuple):
